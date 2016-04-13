@@ -10,9 +10,10 @@ library(dplyr)
 getTopUserArtists <- function(user = read.csv("credentials.csv")$user,
                               from = "2016-01-01", 
                               to = Sys.Date(), #current date
-                              ntop = 10, 
+                              n = 10, 
                               limit = 1000, 
-                              api_key = read.csv("credentials.csv")$key){
+                              api_key = read.csv("credentials.csv")$key,
+                              top = TRUE){
   apiRoot <- "http://ws.audioscrobbler.com/2.0/"
   method <- "user.getrecenttracks"
   qformat <- "json"
@@ -24,22 +25,28 @@ getTopUserArtists <- function(user = read.csv("credentials.csv")$user,
                   "&to=", as.numeric(as.POSIXct(to)),
                   "&from=", as.numeric(as.POSIXct(from)),
                   "&limit=", limit)
-  pltObj <- jsonlite::fromJSON(txt = query, simplifyDataFrame = TRUE) %>%
+  pltObj <- fromJSON(txt = query, simplifyDataFrame = TRUE) %>%
     data.frame(track = .$recenttracks$track$name,
              artist = .$recenttracks$track$artist$`#text`,
              album = .$recenttracks$track$album$`#text`,
              dateListened = .$recenttracks$track$date$`#text`) %>%
     group_by(artist) %>%
     summarise(plays = n()) %>%
-    arrange(desc(plays)) %>%
-    top_n(ntop) %>%
-    mutate(artist = factor(artist, levels = 
-                             artist[order(plays, decreasing = FALSE)])) %>%
+    {if(top){
+      top_n(., n, plays)
+    } else{
+      arrange(., plays)[1:n,]
+    }} %>%
+    mutate(., artist = factor(artist, levels = 
+                             artist[order(plays)])) %>%
     ggplot(aes(artist, plays)) + geom_bar(stat = "identity") +
     coord_flip() + 
     scale_y_continuous(breaks = pretty_breaks(n=10))
   return(pltObj)
 }
 
-#Example
-#getTopUserArtists(from = "2016-04-05", ntop = 15)
+# #Examples####
+# getTopUserArtists(from = "2016-03-05", n = 20)
+# 
+# #Note: top = FALSE returns least listened to artists :-D
+# getTopUserArtists(from = "2016-03-05", n = 20, top = FALSE)
