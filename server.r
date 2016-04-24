@@ -1,4 +1,5 @@
 #Server script
+#Queries lastfm api and gets list of top artists for a user
 options(stringsAsFactors = FALSE)
 
 library(jsonlite)
@@ -29,7 +30,11 @@ getTopUserArtists <- function(user = read.csv("credentials.csv")$user,
     data.frame(track = .$recenttracks$track$name,
              artist = .$recenttracks$track$artist$`#text`,
              album = .$recenttracks$track$album$`#text`,
-             dateListened = .$recenttracks$track$date$`#text`) %>%
+             dateListened = .$recenttracks$track$date$`#text`)
+  return(pltObj)
+}  
+  
+  %>%
     group_by(artist) %>%
     summarise(plays = n()) %>%
     {if(top){
@@ -46,7 +51,7 @@ getTopUserArtists <- function(user = read.csv("credentials.csv")$user,
 }
 
 # #Examples####
-# getTopUserArtists(from = "2016-03-05", n = 20)
+x <- getTopUserArtists(from = "2016-03-05", n = 20)
 # 
 # #Note: top = FALSE returns least listened to artists :-D
 # getTopUserArtists(from = "2016-03-05", n = 20, top = FALSE)
