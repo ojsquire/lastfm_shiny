@@ -1,12 +1,14 @@
 #Server script
-#Queries lastfm api and gets list of top artists for a user
-options(stringsAsFactors = FALSE)
+library(shiny)
 
-library(jsonlite)
-library(ggplot2)
-library(scales)
-library(dplyr)
-
+shinyServer(function(input, output) {
+  options(stringsAsFactors = FALSE)
+  
+  library(jsonlite)
+  library(ggplot2)
+  library(scales)
+  library(dplyr)
+  
 #Connects to Last.fm and plots top n artists in specified period
 getTopUserArtists <- function(user = read.csv("credentials.csv")$user,
                               from = "2016-01-01", 
@@ -26,15 +28,11 @@ getTopUserArtists <- function(user = read.csv("credentials.csv")$user,
                   "&to=", as.numeric(as.POSIXct(to)),
                   "&from=", as.numeric(as.POSIXct(from)),
                   "&limit=", limit)
-  pltObj <- fromJSON(txt = query, simplifyDataFrame = TRUE) %>%
+  dat <- fromJSON(txt = query, simplifyDataFrame = TRUE) %>%
     data.frame(track = .$recenttracks$track$name,
              artist = .$recenttracks$track$artist$`#text`,
              album = .$recenttracks$track$album$`#text`,
-             dateListened = .$recenttracks$track$date$`#text`)
-  return(pltObj)
-}  
-  
-  %>%
+             dateListened = .$recenttracks$track$date$`#text`) %>%
     group_by(artist) %>%
     summarise(plays = n()) %>%
     {if(top){
@@ -43,15 +41,16 @@ getTopUserArtists <- function(user = read.csv("credentials.csv")$user,
       arrange(., plays)[1:n,]
     }} %>%
     mutate(., artist = factor(artist, levels = 
-                             artist[order(plays)])) %>%
-    ggplot(aes(artist, plays)) + geom_bar(stat = "identity") +
+                                artist[order(plays)])) 
+  return(dat)
+}  
+
+output$topUserArtists <- renderPlot({
+  x <- getTopUserArtists(from = input$fromDate, n = input$nTopArtists)
+    ggplot(x, aes(artist, plays)) + geom_bar(stat = "identity") +
     coord_flip() + 
     scale_y_continuous(breaks = pretty_breaks(n=10))
-  return(pltObj)
-}
-
-# #Examples####
-x <- getTopUserArtists(from = "2016-03-05", n = 20)
-# 
+})
 # #Note: top = FALSE returns least listened to artists :-D
 # getTopUserArtists(from = "2016-03-05", n = 20, top = FALSE)
+})
