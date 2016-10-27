@@ -19,5 +19,6 @@ vignettes/*.pdf
 .httr-oauth
 .Rproj.user
 
-#Make credentials invisible on github
-credentials.csv
+#Ignore data
+*.csv
+
