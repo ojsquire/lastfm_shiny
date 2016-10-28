@@ -3,6 +3,7 @@ library(jsonlite)
 library(ggplot2)
 library(scales)
 library(dplyr)
+library(tidyr)
 
 apiRoot <- "http://ws.audioscrobbler.com/2.0/"
 method <- "user.getrecenttracks"
@@ -43,8 +44,16 @@ for (i in 2:total_pages){
   dat <- rbind(dat, d2)
 }
 
-d4 <- dat %>%
-  select(-track.image) %>%
+# Clean up, sort out images etc.
+dat_out <- do.call(rbind.data.frame, dat$track.image) %>%
+  mutate(index = rep(1:(n()/4), each=4)) %>%
+  spread(size, `#text`) %>%
+  rename(image_extralarge = extralarge) %>%
+  rename(image_large = large) %>%
+  rename(image_medium = medium) %>%
+  rename(image_small = small) %>%  
+  cbind(dat, .) %>% 
+  select(-track.image, -index) %>%
   add_rownames("scrobble_id") %>%
   rename(track_name = track.name) %>%
   rename(streamable = track.streamable) %>%
@@ -65,4 +74,4 @@ d4 <- dat %>%
   select(scrobble_id, play_timestamp, track_name, artist, album, everything())
 
 # Save data to disk
-write.csv(d4, "my_scrobbles.csv", row.names = FALSE)
+write.csv(dat_out, "my_scrobbles.csv", row.names = FALSE)
