@@ -68,7 +68,7 @@ dat_out <- do.call(rbind.data.frame, dat$track.image) %>%
   rename(artist_mbid = track.artist.mbid) %>%
   rename(album = `track.album.#text`) %>%
   rename(album_mbid = track.album.mbid) %>%
-  rename(now_playing = track..attr.nowplaying) %>%
+  select(-matches("track..attr.nowplaying"), everything()) %>%
   rename(play_timestamp_ux = track.date.uts) %>%
   rename(play_timestamp = `track.date.#text`) %>%
   select(scrobble_id, play_timestamp, track_name, artist, album, everything())
